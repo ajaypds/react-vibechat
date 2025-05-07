@@ -1,12 +1,16 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { FiSend, FiSmile } from 'react-icons/fi';
 import { useAuth } from '../../context/AuthContext';
 import { createMessage } from '../../utils/firestore';
+import EmojiPicker from 'emoji-picker-react';
 
 const MessageInput = () => {
     const [message, setMessage] = useState('');
     const [isSending, setIsSending] = useState(false);
+    const [showEmojiPicker, setShowEmojiPicker] = useState(false);
     const { currentUser } = useAuth();
+    const emojiPickerRef = useRef(null);
+    const emojiButtonRef = useRef(null);
 
     const handleSendMessage = async (e) => {
         e.preventDefault();
@@ -31,15 +35,52 @@ const MessageInput = () => {
         }
     };
 
+    const handleEmojiClick = (emojiData) => {
+        const emoji = emojiData.emoji;
+        setMessage((prevMsg) => prevMsg + emoji);
+        setShowEmojiPicker(false);
+    };
+
+    // Close emoji picker when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (
+                emojiPickerRef.current &&
+                !emojiPickerRef.current.contains(event.target) &&
+                !emojiButtonRef.current.contains(event.target)
+            ) {
+                setShowEmojiPicker(false);
+            }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, []);
+
     return (
         <div className="border-t border-gray-200 p-4 bg-white">
             <form onSubmit={handleSendMessage} className="flex items-center space-x-2">
-                <button
-                    type="button"
-                    className="text-gray-500 hover:text-indigo-600 focus:outline-none"
-                >
-                    <FiSmile size={24} />
-                </button>
+                <div className="relative">
+                    <button
+                        type="button"
+                        ref={emojiButtonRef}
+                        onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                        className="text-gray-500 hover:text-indigo-600 focus:outline-none"
+                    >
+                        <FiSmile size={24} />
+                    </button>
+
+                    {showEmojiPicker && (
+                        <div
+                            ref={emojiPickerRef}
+                            className="absolute bottom-12 left-0 z-10"
+                        >
+                            <EmojiPicker onEmojiClick={handleEmojiClick} />
+                        </div>
+                    )}
+                </div>
 
                 <input
                     type="text"
